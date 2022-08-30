@@ -37,7 +37,7 @@ var NameServer = Server{"vss"}
 var ApiUser = API{"user"}
 var ActionLogin = Action{"apiLogin.action?"}
 
-func getToken() (string, string){
+func GetToken() (string, string){
 	go func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

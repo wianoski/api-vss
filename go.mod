@@ -1,3 +1,3 @@
-module github.com/cameronldroberts/golang-api
+module github.com/wianoski/api-vss
 
 go 1.18
