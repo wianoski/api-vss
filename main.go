@@ -5,9 +5,9 @@ import (
 	"time"
 	// "log"
 	"fmt"
-
 	"github.com/wianoski/api-vss/model"
 	"github.com/wianoski/api-vss/services"
+	"github.com/wianoski/api-vss/static"
 )
 
 type Device struct{
@@ -26,7 +26,7 @@ var Token, PID string = services.GetToken()
 func main() {
 
 	server := "vss"
-	key := "vehicle"
+	key := static.ActionTypes(2)
 	action := "getDeviceStatus.action"
 	param := "deviceID=bb345"
 
