@@ -4,11 +4,12 @@ import (
 	"time"
 	// "log"
 	"fmt"
-	"github.com/wianoski/api-vss/type_test/"
+
+	"github.com/wianoski/api-vss/type_test"
 )
+var Token, PID string = type_test.GetToken()
 
 func main() {
-	Token, PID := type_test.
-	fmt.Println()
+	fmt.Printf("Token: %s\nPID: %s \n", Token,PID)
 	time.Sleep(100 * time.Millisecond)	
 }
