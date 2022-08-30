@@ -4,7 +4,7 @@ import (
 
 )
 
-type Server struct {
+type ServerUrl struct {
 	Server string
 	Key string
 	Action string
