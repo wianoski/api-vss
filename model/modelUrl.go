@@ -22,7 +22,6 @@ func SetServerApi(ServerUrl string, KeyUrl string, ActionUrl string, Token strin
 	RequestUrl := fmt.Sprintf("%s:%d/%s/%s/%s?token=%s&%s",Url,UrlPort, ServerUrl,KeyUrl,ActionUrl,Token,Paramater)
 	res,_ := http.Get(RequestUrl)
 	resBody, err := io.ReadAll(res.Body)
-	fmt.Println(RequestUrl)
 	if err != nil {
 		fmt.Printf("error making http request: %s\n", err)
 		os.Exit(1)

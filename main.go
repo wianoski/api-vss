@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/wianoski/api-vss/model"
-	"github.com/wianoski/api-vss/service"
+	"github.com/wianoski/api-vss/services"
 )
 
 type Device struct{
@@ -21,13 +21,17 @@ type Device struct{
 }
 
 var deviceData Device
-var Token, PID string = type_test.GetToken()
+var Token, PID string = services.GetToken()
 
 func main() {
-	// fmt.Printf("Token: %s\nPID: %s \n", Token,PID)
 
-	var getDevice string = model.SetServerApi("vss","vehicle","getDeviceStatus.action",Token, "deviceID=bb345")
-	// fmt.Println(getDevice)
+	server := "vss"
+	key := "vehicle"
+	action := "getDeviceStatus.action"
+	param := "deviceID=bb345"
+
+	var getDevice string = model.SetServerApi(server,key,action,Token, param)
+	fmt.Printf("Action: %s\n", action)
 	er := json.Unmarshal([]byte(getDevice), &deviceData)
 	if er != nil{
 		fmt.Println(er)
