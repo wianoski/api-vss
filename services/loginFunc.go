@@ -1,8 +1,7 @@
-package type_test
+package service
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -39,21 +38,6 @@ var ApiUser = API{"user"}
 var ActionLogin = Action{"apiLogin.action?"}
 
 func GetToken() (string, string){
-	go func() {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("server: %s /\n", r.Method)
-		})
-		server := http.Server{
-			Addr:    fmt.Sprintf(":%d", urlPort),
-			Handler: mux,
-		}
-		if err := server.ListenAndServe(); err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				fmt.Printf("error running http server: %s\n", err)
-			}
-		}
-	}()
 	requestURL := fmt.Sprintf("%s:%d/%s/%s/%susername=%s&password=%s", url,urlPort, NameServer.Server,ApiUser.Key, ActionLogin.Action, user_name, user_hash)
 	res, err := http.Get(requestURL)
 	resBody, err := io.ReadAll(res.Body)
