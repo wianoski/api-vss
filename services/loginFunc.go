@@ -6,20 +6,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"github.com/wianoski/api-vss/static"
+	"github.com/wianoski/api-vss/other"
 	
 )
 
-type Server struct{
-	Server string
-}
-
-type API struct{
-	Key string
-}
-
-type Action struct {
-	Action string
-}
 
 type Data struct {
 	Data   struct {
@@ -28,17 +19,22 @@ type Data struct {
 	} `json:"data"`
 }
 
-const url = "http://47.252.16.64"
+
 const urlPort = 9966
-const user_name = "BlueB"
-const user_hash = "3d22abdc5e8c9ab21ba13b540a8875f0"
 var outcome Data
-var NameServer = Server{"vss"}
-var ApiUser = API{"user"}
-var ActionLogin = Action{"apiLogin.action?"}
 
 func GetToken() (string, string){
-	requestURL := fmt.Sprintf("%s:%d/%s/%s/%susername=%s&password=%s", url,urlPort, NameServer.Server,ApiUser.Key, ActionLogin.Action, user_name, user_hash)
+
+	server := "vss"
+	key := static.ActionTypes(1)
+	action := "apiLogin.action?"
+
+	url := other.GetEnvVariable("URL")
+	user_name := other.GetEnvVariable("USER_NAME")
+	user_hash := other.GetEnvVariable("USER_HASH")
+
+
+	requestURL := fmt.Sprintf("%s:%d/%s/%s/%susername=%s&password=%s", url,urlPort, server,key, action, user_name, user_hash)
 	res, err := http.Get(requestURL)
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -53,9 +49,7 @@ func GetToken() (string, string){
 	}
 
 	Tokens := outcome.Data.Token
-	Pids := outcome.Data.Pid
-	
-	// fmt.Printf("Token: %+v\n", outcome.Data.Token)
-	// fmt.Printf("PID: %+v\n", outcome.Data.Pid)
+	Pids := outcome.Data.Pid  
+
 	return Tokens, Pids
 }
