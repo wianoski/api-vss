@@ -16,11 +16,11 @@ type ServerUrl struct {
 }
 
 
-var UrlPort = 9966
 
 func SetServerApi(ServerUrl string, KeyUrl string, ActionUrl string, Token string, Paramater string) (string){
 	url := other.GetEnvVariable("URL")
-	RequestUrl := fmt.Sprintf("%s:%d/%s/%s/%s?token=%s&%s",url,UrlPort, ServerUrl,KeyUrl,ActionUrl,Token,Paramater)
+	urlPort := other.GetEnvVariable("URL_PORT")
+	RequestUrl := fmt.Sprintf("%s:%s/%s/%s/%s?token=%s&%s",url,urlPort, ServerUrl,KeyUrl,ActionUrl,Token,Paramater)
 	res,_ := http.Get(RequestUrl)
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {

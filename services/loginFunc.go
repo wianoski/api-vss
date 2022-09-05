@@ -20,7 +20,7 @@ type Data struct {
 }
 
 
-const urlPort = 9966
+
 var outcome Data
 
 func GetToken() (string, string){
@@ -30,11 +30,12 @@ func GetToken() (string, string){
 	action := "apiLogin.action?"
 
 	url := other.GetEnvVariable("URL")
+	urlPort := other.GetEnvVariable("URL_PORT")
 	user_name := other.GetEnvVariable("USER_NAME")
 	user_hash := other.GetEnvVariable("USER_HASH")
 
 
-	requestURL := fmt.Sprintf("%s:%d/%s/%s/%susername=%s&password=%s", url,urlPort, server,key, action, user_name, user_hash)
+	requestURL := fmt.Sprintf("%s:%s/%s/%s/%susername=%s&password=%s", url,urlPort, server,key, action, user_name, user_hash)
 	res, err := http.Get(requestURL)
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
