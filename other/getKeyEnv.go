@@ -9,10 +9,10 @@ import (
 func GetEnvVariable(key string) string {
 
 	// load .env file
-	err := godotenv.Load(".env")
+	err := godotenv.Load("key.env")
   
 	if err != nil {
-	  log.Fatalf("Error loading .env file")
+	  log.Fatalf("[err]Error loading .env file")
 	}
   
 	return os.Getenv(key)

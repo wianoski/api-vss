@@ -1,95 +1,146 @@
 package services
 
 import (
-	"bytes"
+	// "bytes"
+	// "net/http"
 	"encoding/json"
-	"net/http"
+	"flag"
+	"log"
+	"net/url"
+	"os"
+	"os/signal"
 	"time"
 
-	// "log"
-	"fmt"
-
-	"github.com/wianoski/api-vss/model"
+	"github.com/gorilla/websocket"
 	"github.com/wianoski/api-vss/other"
-	"github.com/wianoski/api-vss/static"
 )
 
-type Device struct{
-	Device []struct{
-		DeviceGuid string `json:"deviceguid"`
-		DeviceName string `json:"deviceName"`
-		Long float64 `json:"longitude"`
-		Lat float64 `json:"latitude"`
-		Sat string `json:"satellites"`
-		Speed string `json:"speed"`
-		Direct string `json:"direct"`
-		Accstate interface{} `json:"accstate"`
-	}`json:"data"`
-}
 
-type Payload struct{
-	DeviceGuid string `json:"guid"`
-	DeviceName string `json"deviceName"`
-	Longitude float64 `json:"longitude"`
-	Latitude float64 `json":"latitude"`
-	Satelitte string `json:"satellites"`
-	Speed string `json:"speed"`
-	Direct string `json:"direct"`
-	AccState interface{} `json"accstate"`
-}
-
-
-var deviceData Device
+var addr = flag.String("addr", other.GetEnvVariable("URL_WS"), "heartbeat_device")
 var Token, PID string = GetToken()
 
-func HeartBeat(){
-		server := "vss"
-		key := static.ActionTypes(2)
-		action := "getDeviceStatus.action"
-		param := "deviceID=bb345"
+// var loc Location
 
-		tbServer := other.GetEnvVariable("URL_TB")
+func SendHeartbeat() {
+	// tbServer := other.GetEnvVariable("URL_TB")
 
-		var getDevice string = model.SetServerApi(server,key,action,Token, param)
-		fmt.Printf("Action: %s\n", action)
-		er := json.Unmarshal([]byte(getDevice), &deviceData)
-		if er != nil{
-			fmt.Println(er)
-		}
+	Login := &LoginWs{
+		Action: "80000",
+		Payload: struct{
+			Username string `json:"username"`
+			Pid string `json:"pid"`
+			Token string `json:"token"`}{
+				Username: other.GetEnvVariable("USER_NAME"),
+				Pid: PID,
+				Token: Token,
+			},
+	}
 
-		DeviceN := deviceData.Device
-		for _,dd := range DeviceN{
-			fmt.Printf("DeviceGuid: %s\nDevice Name: %s\n",dd.DeviceGuid,dd.DeviceName)
-			if dd.Accstate == nil {
-				fmt.Println("Acc Status: Off")
-			}else{
-				fmt.Printf("Acc Status: On\n")
+	hb := &Heartbeat{
+		Action: "80001",
+		Payload: "",
+	}
+	flag.Parse()
+	log.SetFlags(0)
+
+	jsonLogin, _ := json.Marshal(Login)
+	PayloadLogin := string(jsonLogin)
+
+	jsonPayload, _ := json.Marshal(hb)
+	PayloadHeartbeat := string(jsonPayload)
+
+	interrupt := make(chan os.Signal,1)
+	signal.Notify(interrupt,os.Interrupt)
+
+	target := url.URL{Scheme: "ws", Host: *addr, Path: "/ws"}
+	log.Printf("Connecting to: %s\n", target.String())
+
+	c, _, err := websocket.DefaultDialer.Dial(target.String(),nil)
+	if err != nil{
+		log.Fatal("dial", err)
+	}
+	
+	connLogin := c.WriteMessage(websocket.TextMessage, []byte(PayloadLogin))
+	if connLogin != nil {
+		log.Println("write:", connLogin)
+		return
+	}
+	connHeartbeat := c.WriteMessage(websocket.TextMessage, []byte(PayloadHeartbeat))
+	if connHeartbeat != nil {
+		log.Println("write:", connHeartbeat)
+		return
+	}
+
+
+	defer c.Close()
+
+	done := make(chan struct{})
+
+	go func() {
+		var ws WS
+		defer close(done)
+		for {
+			err := c.ReadJSON(&ws)
+			if err != nil {
+				log.Println("read:", err)
+				return
 			}
-			payloadSend := &Payload{
-				DeviceGuid: dd.DeviceGuid,
-				DeviceName: dd.DeviceName,
-				Longitude: dd.Long,
-				Latitude: dd.Lat,
-				Satelitte: dd.Sat,
-				Speed: dd.Speed,
-				Direct: dd.Direct,
-				AccState: dd.Accstate,
+			SendHeartbeat := &SendHB{
+				Guid: ws.Payload.DeviceID,
+				Timestamp: ws.Payload.Location.Dtu,
+				Direction: ws.Payload.Location.Direct,
+				Sats: ws.Payload.Location.Satellites,
+				Speed: ws.Payload.Location.Speed,
+				Alt: ws.Payload.Location.Altitude,
+				Long: ws.Payload.Location.Longitude,
+				Lat: ws.Payload.Location.Latitude,
 			}
-			buf := new(bytes.Buffer)
-			json.NewEncoder(buf).Encode(payloadSend)
-			requestPost, _ := http.NewRequest("POST", tbServer, buf)
-			client := &http.Client{}
-			res, e := client.Do(requestPost)
-			if e != nil {
-				fmt.Println("error")
-			}
-		
-			defer res.Body.Close()
-		
-			fmt.Println("heartbeat response Status:", res.Status)
+
+			// uncomment if want to use thingsboard
+
+			// if loc.Payload.DeviceID == "bb345" {
+			// 	buf := new(bytes.Buffer)
+			// 	json.NewEncoder(buf).Encode(SendHeartbeat)
+			// 	requestPost, _ := http.NewRequest("POST", tbServer, buf)
+			// 	client := &http.Client{}
+			// 	res, e := client.Do(requestPost)
+			// 	if e != nil {
+			// 		log.Println("error")
+			// 	}
+			// 	defer res.Body.Close()
+			// 	log.Println("heartbeat response Status:", res.Status)
+			// }
+			
+			packet, _ := json.Marshal(SendHeartbeat)
+			Data := string(packet)
+			log.Printf("recv: %s, alarm: %s", Data, ws.Payload.Payload)
+			
 			
 		}
-		
-		time.Sleep(100 * time.Millisecond)	
+	}()
 
-}
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-done:
+			return
+		case <-interrupt:
+			log.Println("interrupt")
+
+			// Cleanly close the connection by sending a close message and then
+			// waiting (with timeout) for the server to close the connection.
+			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil {
+				log.Println("write close:", err)
+				return
+			}
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+			}
+			return
+		}
+	}
+} 
